@@ -149,3 +149,4 @@ def profile_calendar(request):
     return render(request, 'profile.html', {
         'reminders': reminders
     })
+
