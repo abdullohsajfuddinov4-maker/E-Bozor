@@ -1,181 +1,128 @@
 {% extends "base.html" %}
 
 {% block title %}
-    E-Bazar - {{ product.title }}
+E-Bazar - {{ product.title }}
 {% endblock title %}
 
 {% block content %}
-<div class="container">
-    <div class="w-100 mt-5">
-        <div class="row shadow-sm">
-            <div class="col-4 p-3">
-                <div id="carouselExampleCaptions" class="carousel slide" data-bs-ride="carousel">
-                    <div class="carousel-inner">
-                        {% for picture in product.productimage_set.all %}
-                            {% if forloop.first %}
-                                <div class="carousel-item active thumbnail shadow-sm">
-                                    <img class="d-block w-100" width="400" height="270"
-                                         src="{{ picture.image.url }}" alt="">
-                                </div>
-                            {% else %}
-                                <div class="carousel-item thumbnail shadow-sm">
-                                    <img class="d-block w-100" width="400" height="270"
-                                         src="{{ picture.image.url }}" alt="">
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    </div>
+<div class="container mt-5">
 
-                    <button class="carousel-control-prev" type="button"
-                            data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon"></span>
-                        <span class="visually-hidden">Previous</span>
-                    </button>
-
-                    <button class="carousel-control-next" type="button"
-                            data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
-                        <span class="carousel-control-next-icon"></span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="col-7 p-5">
-                <h4>{{ product.title }}</h4>
-
-                <!-- ⭐ Rating -->
-                <div class="mb-2">
-                    {% with rating=product.average_rating|floatformat:0 %}
-                        {% if rating > 0 %}
-                            {% for i in "12345" %}
-                                {% if forloop.counter <= rating %}
-                                    <span style="color: gold;">★</span>
-                                {% else %}
-                                    <span style="color: #ccc;">☆</span>
-                                {% endif %}
-                            {% endfor %}
-                            <small class="text-muted">
-                                ({{ product.average_rating|floatformat:1 }}/5)
-                            </small>
-                        {% else %}
-                            <small class="text-muted">Нет рейтинга</small>
-                        {% endif %}
-                    {% endwith %}
+    <!-- PRODUCT -->
+    <div class="row shadow-sm">
+        <div class="col-4 p-3">
+            <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% for picture in product.productimage_set.all %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <img class="d-block w-100" height="270" src="{{ picture.image.url }}">
+                        </div>
+                    {% endfor %}
                 </div>
 
-                <p class="text-muted">
-                    <a href="{% url 'users:profile' product.author.username %}">
-                        @{{ product.author.username }}
-                    </a>
-                    | {{ product.date|date:"d.m.Y" }}
-                </p>
-
-                <p>{{ product.description|safe }}</p>
-
-                <div class="contact mt-4">
-                    {% if request.user == product.author %}
-                        <a class="btn btn-warning"
-                           href="{% url 'products:update' product.id %}">
-                            Edit details
-                        </a>
-                    {% endif %}
-
-                    <a class="btn btn-primary" href="mailto:{{ product.author.email }}">
-                        Email
-                    </a>
-                    <a class="btn btn-primary" href="tel:{{ product.phone_number }}">
-                        Call
-                    </a>
-                    <a class="btn btn-primary"
-                       href="https://t.me/{{ product.tg_username }}">
-                        Telegram
-                    </a>
-                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                </button>
             </div>
         </div>
 
-        <div class="row">
-            <!-- Similar products -->
-            <div class="col-8 mt-5">
-                <h6>In This Category</h6>
+        <div class="col-7 p-5">
+            <h4>{{ product.title }}</h4>
 
-                <div class="d-flex flex-wrap justify-content-between">
-                    {% for i in product.category.product_set.all %}
-                        {% if product != i %}
-                            <div class="card border-0 shadow-sm m-1 mt-3"
-                                 style="width: 14rem;">
-                                {% if i.productimage_set.first %}
-                                    <img height="190" class="card-img-top"
-                                         src="{{ i.productimage_set.first.image.url }}"
-                                         alt="">
-                                {% endif %}
+            <p class="text-muted">
+                <a href="{% url 'users:profile' product.author.username %}">
+                    @{{ product.author.username }}
+                </a>
+                | {{ product.date|date:"d.m.Y" }}
+            </p>
 
-                                <div class="card-body">
-                                    <h6 class="card-title">{{ i.title }}</h6>
-                                    <span class="card-text">${{ i.price }}</span>
+            <p>{{ product.description|safe }}</p>
 
-                                    <div class="d-flex justify-content-between mt-2">
-                                        <i class="bi bi-bookmark-fill"></i>
-                                        <a href="{% url 'products:detail' i.id %}"
-                                           class="btn btn-outline-primary">
-                                            Details
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
+            <!-- RATING -->
+            <p>
+                ⭐ Средний рейтинг:
+                <strong>{{ product.average_rating|floatformat:1 }}</strong> / 5
+            </p>
 
-            <!-- Comments -->
-            <div class="col-4 mt-5 shadow-sm">
-                <h6 class="pt-2">Add comment</h6>
+            <div class="mt-4">
+                {% if request.user == product.author %}
+                    <a class="btn btn-warning" href="{% url 'products:update' product.id %}">
+                        Edit
+                    </a>
 
-                <form action="{% url 'products:comment_new' product.id %}"
-                      method="post" class="input-group">
-                    {% csrf_token %}
-                    <input class="form-control"
-                           name="body"
-                           type="text"
-                           placeholder="Type your comment...">
-                    <button class="btn btn-outline-success" type="submit">
-                        Send
-                    </button>
-                </form>
+                    <form action="{% url 'products:delete' product.id %}"
+                          method="post"
+                          class="d-inline"
+                          onsubmit="return confirm('Вы действительно хотите удалить этот продукт?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            Delete
+                        </button>
+                    </form>
+                {% endif %}
 
-                <hr>
 
-                <h6>Comments</h6>
-
-                {% for comment in product.comments.all %}
-                    <small class="text-muted">
-                        @{{ comment.author.username }} | {{ comment.date }}
-                    </small>
-
-                    <p>
-                        {% for i in "12345" %}
-                            {% if forloop.counter <= comment.rating %}
-                                <span style="color: gold;">★</span>
-                            {% else %}
-                                <span style="color: #ccc;">☆</span>
-                            {% endif %}
-                        {% endfor %}
-                        <br>
-
-                        {{ comment.body }}
-
-                        {% if request.user == comment.author %}
-                            <small>
-                                <a href="{% url 'products:comment_delete' product.id comment.id %}">
-                                    delete
-                                </a>
-                            </small>
-                        {% endif %}
-                    </p>
-                {% endfor %}
+                <a class="btn btn-primary" href="mailto:{{ product.author.email }}">Email</a>
+                <a class="btn btn-primary" href="tel:{{ product.phone_number }}">Call</a>
+                <a class="btn btn-primary" href="https://t.me/{{ product.tg_username }}">Telegram</a>
             </div>
         </div>
     </div>
+
+    <!-- COMMENTS -->
+    <div class="row mt-5">
+        <div class="col-8">
+            <h5>Add comment</h5>
+
+            <form action="{% url 'products:comment_new' product.id %}" method="post">
+                {% csrf_token %}
+
+                <div class="mb-2">
+                    <select name="rating" class="form-select" required>
+                        <option value="">Rating</option>
+                        {% for i in "12345" %}
+                            <option value="{{ i }}">{{ i }} ⭐</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <input class="form-control" name="body" required placeholder="Your comment">
+                    <button class="btn btn-success">Send</button>
+                </div>
+            </form>
+
+            <hr>
+
+            <h6>Comments</h6>
+
+            {% for comment in product.comments.all %}
+                <div class="mb-2">
+                    <small class="text-muted">
+                        @{{ comment.author.username }}
+                        | {{ comment.date }}
+                        | ⭐ {{ comment.rating }}/5
+                    </small>
+
+                    <p>
+                        {{ comment.body }}
+
+                        {% if request.user == comment.author %}
+                            <a class="text-danger ms-2"
+                               href="{% url 'products:comment_delete' product.id comment.id %}"
+                               onclick="return confirm('Вы действительно хотите удалить этот комментарий?');">
+                                delete
+                            </a>
+                        {% endif %}
+                    </p>
+                </div>
+            {% empty %}
+                <p class="text-muted">No comments yet</p>
+            {% endfor %}
+        </div>
+    </div>
+
 </div>
 {% endblock content %}

@@ -1,10 +1,11 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from .forms import SignupForm, UpdateProfileForm
-from .models import CustomUser, Saved
+from .models import CustomUser, Saved ,Reminder
 from products.models import Product
 
 
@@ -132,3 +133,15 @@ class RecentlyViewedView(View):
             'recently_viewed.html',
             {'products': products}
         )
+
+# -------- calendar
+
+
+@login_required
+def profile_calendar(request):
+    reminders = Reminder.objects.filter(user=request.user)
+
+
+    return render(request, 'profile.html', {
+        'reminders': reminders
+    })

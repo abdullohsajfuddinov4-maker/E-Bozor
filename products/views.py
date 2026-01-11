@@ -122,12 +122,11 @@ def new_comment(request, product_id):
         Comment.objects.create(
             author=request.user,
             product=product,
-            body=request.POST.get('body')
+            body=request.POST.get('body'),
+            rating=request.POST.get('rating')  # ВАЖНО
         )
-        messages.success(request, 'Comment added!')
         return redirect('products:detail', product_id)
 
-    return HttpResponse('Add comment')
 
 
 @login_required(login_url='login')
