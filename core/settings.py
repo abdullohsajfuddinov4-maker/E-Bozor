@@ -125,8 +125,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = (str(BASE_DIR.joinpath("static")),)
-MEDIA_URL = 'media/'
-MEDIA_ROOT = str(BASE_DIR.joinpath("media"))
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 CRISPY_ALLOWED_TEMPLATE_PACK = 'bootstrap5'

@@ -16,13 +16,13 @@ def new_product(request):
     if request.method == 'POST':
         form = NewProductForm(
             request.POST,
+            request.FILES,
             user=request.user
         )
 
         if form.is_valid():
             product = form.save()
 
-            # загрузка нескольких изображений
             images = request.FILES.getlist('images')
             for image in images:
                 ProductImage.objects.create(
