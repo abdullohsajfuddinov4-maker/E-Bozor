@@ -1,6 +1,6 @@
 
 from .views import SignupView, ProfileView, UpdateProfileView, AddRemoveSavedView, SavedView, RecentlyViewedView, \
-    profile_calendar
+    profile_calendar, logout_view
 from django.urls import path
 
 app_name='users'
@@ -12,4 +12,7 @@ urlpatterns = [
     path('saveds', SavedView.as_view(), name='saveds'),
     path('recently-viewed', RecentlyViewedView.as_view(), name='recently_viewed'),
     path('calendar/', profile_calendar, name='calendar'),
+    path('logout/', logout_view, name='logout'),
+
+
 ]

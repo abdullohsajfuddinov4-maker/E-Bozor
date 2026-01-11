@@ -72,41 +72,52 @@ E-Bazar - {{ product.title }}
     </div>
 
     <!-- COMMENTS -->
-    <div class="row mt-5">
-        <div class="col-8">
-            <h5>Add comment</h5>
+   <div class="row mt-5">
+    <div class="col-8">
+        <h5>Add comment</h5>
 
-            <form action="{% url 'products:comment_new' product.id %}" method="post">
-                {% csrf_token %}
+        <form action="{% url 'products:comment_new' product.id %}" method="post">
+            {% csrf_token %}
 
-                <div class="mb-2">
-                    <select name="rating" class="form-select" required>
-                        <option value="">Rating</option>
-                        {% for i in "12345" %}
-                            <option value="{{ i }}">{{ i }} ⭐</option>
-                        {% endfor %}
-                    </select>
+            <div class="mb-2">
+                <select name="rating" class="form-select" required>
+                    <option value="">Rating</option>
+                    {% for i in "12345" %}
+                        <option value="{{ i }}">{{ i }} ⭐</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="input-group">
+                <input class="form-control" name="body" required placeholder="Your comment">
+                <button class="btn btn-success">Send</button>
+            </div>
+        </form>
+
+        <hr>
+
+        <h6>Comments</h6>
+
+        {% for comment in product.comments.all %}
+            <div class="mb-3 d-flex align-items-start">
+                <!-- Фото профиля автора -->
+                <div class="me-3">
+                    <img src="{{ comment.author.avatar.url|default:'/static/images/default-avatar.png' }}"
+                         class="rounded-circle"
+                         width="40"
+                         height="40"
+                         alt="{{ comment.author.get_full_name }} avatar">
                 </div>
 
-                <div class="input-group">
-                    <input class="form-control" name="body" required placeholder="Your comment">
-                    <button class="btn btn-success">Send</button>
-                </div>
-            </form>
-
-            <hr>
-
-            <h6>Comments</h6>
-
-            {% for comment in product.comments.all %}
-                <div class="mb-2">
-                    <small class="text-muted">
+                <!-- Текст комментария и метаданные -->
+                <div class="flex-grow-1">
+                    <small class="text-muted d-block mb-1">
                         @{{ comment.author.username }}
                         | {{ comment.date }}
                         | ⭐ {{ comment.rating }}/5
                     </small>
 
-                    <p>
+                    <p class="mb-0">
                         {{ comment.body }}
 
                         {% if request.user == comment.author %}
@@ -118,11 +129,13 @@ E-Bazar - {{ product.title }}
                         {% endif %}
                     </p>
                 </div>
-            {% empty %}
-                <p class="text-muted">No comments yet</p>
-            {% endfor %}
-        </div>
+            </div>
+        {% empty %}
+            <p class="text-muted">No comments yet</p>
+        {% endfor %}
     </div>
+</div>
+
 
 </div>
 {% endblock content %}

@@ -1,3 +1,4 @@
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
@@ -32,6 +33,9 @@ class SignupView(UserPassesTestMixin, View):
     def test_func(self):
         return not self.request.user.is_authenticated
 
+def logout_view(request):
+    logout(request)
+    return redirect('/')
 
 class ProfileView(View):
     login_url = 'login'
