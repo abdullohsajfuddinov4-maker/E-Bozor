@@ -8,7 +8,7 @@ class CustomUser(AbstractUser):
     phone_number = models.CharField(max_length=17)
     tg_username = models.CharField(max_length=150)
     avatar = models.ImageField(upload_to='avatars/', default='avatars/default.png')
-    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
 
     def __str__(self):
         return str(self.username)
@@ -38,21 +38,38 @@ class Reminder(models.Model):
 
 # from products.models import Product
 
+
+from decimal import Decimal, ROUND_HALF_UP
+
 class Transaction(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
     is_confirmed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.user.username} - {self.amount}"
+    def save(self, *args, **kwargs):
+        if self.amount:
+            self.amount = Decimal(self.amount).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+        super().save(*args, **kwargs)
 
+    def __str__(self):
+        return f"{self.user.username} - {self.amount:.2f}"
+
+
+from decimal import Decimal, ROUND_HALF_UP
 
 class Order(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders')
     product = models.ForeignKey('products.Product', on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=12, decimal_places=2) # Увеличили до 12 для запаса
     date = models.DateTimeField(auto_now_add=True)
     quantity = models.PositiveIntegerField(default=1)
+
+    def save(self, *args, **kwargs):
+        # Округляем до 2 знаков перед попаданием в БД
+        if self.price:
+            self.price = Decimal(str(self.price)).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.user.username} - {self.product.title}"

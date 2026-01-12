@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .forms import SignupForm, UpdateProfileForm
 from .models import CustomUser, Saved, Reminder, Transaction, Order
 from products.models import Product
-
+from decimal import Decimal
 
 class SignupView(UserPassesTestMixin, View):
     def get(self, request):
@@ -234,54 +234,56 @@ def cart_clear(request):
 # -------- by----
 from products.models import Product
 
+
 @login_required
 def buy_now(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        product = get_object_or_404(Product, id=product_id)
+        # Получаем количество из скрытого поля (которое заполнил JS) или из обычного
+        quantity = int(request.POST.get('quantity_hidden', 1))
 
-    # Защита: продавец не может купить свой товар
-    if request.user == product.author:
-        messages.error(request, "You cannot buy your own product.")
-        return redirect('products:detail', product_id=product.id)
+        if request.user.balance >= (product.price * quantity):
+            if product.count >= quantity:
+                # 1. Снимаем деньги
+                request.user.balance -= (product.price * quantity)
+                request.user.save()
 
-    # Проверка количества и баланса
-    if product.count > 0:
-        if request.user.balance >= product.price:
-            # 1. Снимаем деньги
-            request.user.balance -= product.price
-            request.user.save()
+                # 2. Уменьшаем остаток товара
+                product.count -= quantity
+                product.save()
 
-            # 2. Уменьшаем количество товара
-            product.count -= 1
-            product.save()
+                # 3. ВАЖНО: Создаем запись в истории заказов
+                Order.objects.create(
+                    user=request.user,
+                    product=product,
+                    price=product.price * quantity,
+                    quantity=quantity
+                )
 
-            # 3. Здесь можно создать Order (Заказ)
-            # Order.objects.create(user=request.user, product=product, ...)
-
-            messages.success(request, f"Successfully purchased {product.title}!")
+                messages.success(request, "Покупка совершена!")
+                return redirect('users:orders')  # Перенаправляем на страницу истории
+            else:
+                messages.error(request, "Недостаточно товара на складе.")
         else:
-            messages.error(request, "Insufficient balance.")
-    else:
-        messages.error(request, "Product is out of stock.")
+            messages.error(request, "Недостаточно средств.")
 
-    return redirect('products:detail', product_id=product.id)
+    return redirect('products:detail', product_id=product_id)
+
 
 @login_required
 def add_to_cart(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-
-    if request.user == product.author:
-        messages.error(request, "You cannot add your own product to cart.")
-    else:
+    if request.method == 'POST':
+        quantity = int(request.POST.get('quantity', 1))
         cart = request.session.get('cart', {})
-        p_id = str(product.id)
 
+        p_id = str(product_id)
         if p_id in cart:
-            cart[p_id] += 1
+            cart[p_id] += quantity
         else:
-            cart[p_id] = 1
+            cart[p_id] = quantity
 
         request.session['cart'] = cart
-        messages.success(request, "Added to cart!")
+        messages.success(request, f"Добавлено в корзину: {quantity} шт.")
 
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
@@ -306,3 +308,16 @@ def cart_view(request):
 
     return render(request, 'carts.html', {'products': products, 'total_price': total_price})
 
+@login_required
+def delete_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    order.delete()
+    messages.success(request, "Запись удалена из истории.")
+    return redirect('users:orders')
+
+@login_required
+def clear_orders(request):
+    if request.method == 'POST':
+        Order.objects.filter(user=request.user).delete()
+        messages.success(request, "Вся история заказов очищена.")
+    return redirect('users:orders')

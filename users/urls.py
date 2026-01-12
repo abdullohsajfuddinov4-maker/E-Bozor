@@ -9,7 +9,7 @@ from .views import (SignupView,
                     logout_view,
                     deposit_money,
                     buy_now,
-                    add_to_cart, orders_history, cart_view, checkout_all, cart_clear,
+                    add_to_cart, orders_history, cart_view, checkout_all, cart_clear, delete_order, clear_orders,
                     )
 from django.urls import path
 
@@ -30,6 +30,8 @@ urlpatterns = [
     path('cart/', cart_view, name='cart'),
     path('cart/checkout/', checkout_all, name='checkout_all'),
     path('cart/clear/',cart_clear, name='cart_clear'),
+    path('orders/delete/<int:order_id>/', delete_order, name='delete_order'),
+    path('orders/clear/', clear_orders, name='clear_orders'),
 
 
 
