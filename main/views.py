@@ -28,3 +28,7 @@ class CategoryView(View):
         if q:
             products = products.filter(title__icontains=q)
         return render(request, "category.html", {'products': products, "category": category})
+
+
+
+

@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from .forms import SignupForm, UpdateProfileForm
-from .models import CustomUser, Saved ,Reminder
+from .models import CustomUser, Saved, Reminder, Transaction
 from products.models import Product
 
 
@@ -162,3 +162,47 @@ def profile_calendar(request):
         'reminders': reminders
     })
 
+# ------------------Transaction--------------
+
+
+@login_required
+def deposit_money(request):
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        if amount and float(amount) > 0:
+            # Создаем запись о транзакции (она еще не подтверждена)
+            Transaction.objects.create(user=request.user, amount=amount)
+            messages.success(request, 'Request sent! Admin will confirm your balance soon.')
+        else:
+            messages.error(request, 'Invalid amount.')
+
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
+
+    pass
+
+
+
+
+
+@login_required
+def checkout(request):
+    # Допустим, считаем общую сумму корзины
+    total_price = calculate_total(request.session['cart'])
+
+    if request.user.balance >= total_price:
+        # 1. Вычитаем деньги
+        request.user.balance -= total_price
+        request.user.save()
+
+        # 2. Создаем заказ
+        Order.objects.create(user=request.user, total=total_price, items=...)
+
+        # 3. Очищаем корзину
+        request.session['cart'] = {}
+        messages.success(request, "Покупка успешно совершена!")
+    else:
+        messages.error(request, "Недостаточно средств на балансе.")
+
+    return redirect('main:cart')

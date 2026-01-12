@@ -6,7 +6,7 @@ from .views import (SignupView,
                     SavedView,
                     RecentlyViewedView,
                     profile_calendar,
-                    logout_view,
+                    logout_view, deposit_money,
                     )
 from django.urls import path
 
@@ -20,6 +20,8 @@ urlpatterns = [
     path('recently-viewed', RecentlyViewedView.as_view(), name='recently_viewed'),
     path('calendar/', profile_calendar, name='calendar'),
     path('logout/', logout_view, name='logout'),
+    path('deposit/', deposit_money, name='deposit'),
+
 
 
 ]
