@@ -43,6 +43,7 @@ class ProductImage(models.Model):
 
 
 
+
 class Comment(models.Model):
     product = models.ForeignKey(
         Product,
