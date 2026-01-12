@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %} E-Bazar - {{ category }} {% endblock title %}
+{% block title %}
+E-Bazar - {{ category }}
+{% endblock title %}
 
 {% block content %}
 
@@ -74,24 +76,36 @@
     <h4 class="mb-4">Products in {{ category }}</h4>
 
     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+
         {% for product in products %}
         <div class="col">
-            <div class="card h-100 border-0 shadow-sm transition-hover">
+            <div class="card h-100 border-0 shadow-sm product-card">
 
-                {% with first_image=product.images.all.first %}
-                    <img src="{% if first_image %}{{ first_image.image.url }}{% else %}{% static 'images/default-product.png' %}{% endif %}"
-                         class="card-img-top"
-                         style="height: 180px; object-fit: cover;">
-                {% endwith %}
+                <!-- IMAGE -->
+                <div class="product-image-wrapper">
+                    {% if product.images.all %}
+                        <img src="{{ product.images.all.0.image.url }}"
+                             alt="{{ product.title }}">
+                    {% else %}
+                        <img src="{% static 'images/default-product.png' %}"
+                             alt="No image">
+                    {% endif %}
+                </div>
 
+                <!-- BODY -->
                 <div class="card-body d-flex flex-column">
-                    <h6 class="card-title text-truncate">{{ product.title }}</h6>
-                    <p class="card-text fw-bold text-success mb-3">${{ product.price }}</p>
+                    <h6 class="card-title text-truncate">
+                        {{ product.title }}
+                    </h6>
+
+                    <p class="fw-bold text-success mb-3">
+                        ${{ product.price }}
+                    </p>
 
                     <div class="mt-auto d-flex justify-content-between align-items-center">
                         <i class="bi bi-bookmark text-muted"></i>
                         <a href="{% url 'products:detail' product.id %}"
-                           class="btn btn-outline-primary btn-sm px-3">
+                           class="btn btn-outline-primary btn-sm">
                             Details
                         </a>
                     </div>
@@ -101,9 +115,12 @@
         </div>
         {% empty %}
         <div class="col-12 text-center py-5">
-            <p class="text-muted">No products found matching your filters.</p>
+            <p class="text-muted">
+                No products found matching your filters.
+            </p>
         </div>
         {% endfor %}
+
     </div>
 </div>
 

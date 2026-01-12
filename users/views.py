@@ -179,7 +179,6 @@ def deposit_money(request):
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
 
-
 @login_required
 def checkout_all(request):
     cart = request.session.get('cart', {})
@@ -187,43 +186,61 @@ def checkout_all(request):
         messages.error(request, "Your cart is empty.")
         return redirect('users:cart')
 
-    total_price = 0
+    base_total_price = 0
     items_to_buy = []
 
-    # Сначала проверяем наличие товаров и считаем общую сумму
+    # 1. Считаем базовую стоимость всех товаров
     for p_id, quantity in cart.items():
         product = get_object_or_404(Product, id=p_id)
         if product.count < quantity:
             messages.error(request, f"Not enough stock for {product.title}")
             return redirect('users:cart')
-        total_price += product.price * quantity
-        items_to_buy.append({'product': product, 'quantity': quantity})
 
-    # Проверяем баланс
-    if request.user.balance < total_price:
-        messages.error(request, "Insufficient funds on your balance.")
+        base_total_price += product.price * quantity
+        items_to_buy.append({'product': product, 'quantity': quantity, 'base_price': product.price})
+
+    # --- ЛОГИКА ПРОМОКОДА ---
+    discount_percent = request.session.get('discount', 0)
+    discount_amount = (base_total_price * discount_percent) / 100
+    final_total_price = base_total_price - discount_amount
+    # ------------------------
+
+    # 2. Проверяем баланс по финальной цене
+    if request.user.balance < final_total_price:
+        messages.error(request, f"Insufficient funds. Required: ${final_total_price}")
         return redirect('users:cart')
 
-    # Если всё ок — списываем деньги и создаем заказы
-    request.user.balance -= total_price
+    # 3. Списываем итоговую сумму со скидкой
+    request.user.balance -= final_total_price
     request.user.save()
 
+    # 4. Обработка каждого товара
     for item in items_to_buy:
         product = item['product']
+        quantity = item['quantity']
+
         # Уменьшаем остаток
-        product.count -= item['quantity']
+        product.count -= quantity
         product.save()
-        # Создаем запись в истории для каждой единицы или товара
+
+        # Рассчитываем цену для истории заказов пропорционально скидке
+        item_base_price = product.price * quantity
+        item_final_price = item_base_price - (item_base_price * discount_percent / 100)
+
         Order.objects.create(
             user=request.user,
             product=product,
-            price=product.price * item['quantity'],
-            quantity=item['quantity']
+            price=item_final_price,
+            quantity=quantity
         )
 
-    # Очищаем корзину
+    # 5. Очищаем корзину и промокод
     request.session['cart'] = {}
-    messages.success(request, "Success! Your order has been placed.")
+    if 'discount' in request.session:
+        del request.session['discount']
+        del request.session['promo_code']
+
+    messages.success(request, f"Success! Order placed. Total paid: ${final_total_price} (Saved ${discount_amount})")
     return redirect('users:orders')
 
 @login_required
@@ -239,33 +256,47 @@ from products.models import Product
 def buy_now(request, product_id):
     if request.method == 'POST':
         product = get_object_or_404(Product, id=product_id)
-        # Получаем количество из скрытого поля (которое заполнил JS) или из обычного
         quantity = int(request.POST.get('quantity_hidden', 1))
 
-        if request.user.balance >= (product.price * quantity):
+        # --- ЛОГИКА ПРОМОКОДА ---
+        discount_percent = request.session.get('discount', 0)
+        base_price = product.price * quantity
+
+        # Считаем сумму скидки и итоговую цену
+        discount_amount = (base_price * discount_percent) / 100
+        final_price = base_price - discount_amount
+        # ------------------------
+
+        if request.user.balance >= final_price:
             if product.count >= quantity:
-                # 1. Снимаем деньги
-                request.user.balance -= (product.price * quantity)
+                # 1. Снимаем деньги (со скидкой)
+                request.user.balance -= final_price
                 request.user.save()
 
                 # 2. Уменьшаем остаток товара
                 product.count -= quantity
                 product.save()
 
-                # 3. ВАЖНО: Создаем запись в истории заказов
+                # 3. Создаем запись в истории заказов
+                # В поле price лучше записывать итоговую цену, которую реально заплатил юзер
                 Order.objects.create(
                     user=request.user,
                     product=product,
-                    price=product.price * quantity,
+                    price=final_price,
                     quantity=quantity
                 )
 
-                messages.success(request, "Покупка совершена!")
-                return redirect('users:orders')  # Перенаправляем на страницу истории
+                # Удаляем скидку из сессии после покупки (опционально)
+                if 'discount' in request.session:
+                    del request.session['discount']
+                    del request.session['promo_code']
+
+                messages.success(request, f"Покупка совершена! Списано: ${final_price} (Скидка {discount_percent}%)")
+                return redirect('users:orders')
             else:
                 messages.error(request, "Недостаточно товара на складе.")
         else:
-            messages.error(request, "Недостаточно средств.")
+            messages.error(request, "Недостаточно средств. Нужно: $" + str(final_price))
 
     return redirect('products:detail', product_id=product_id)
 
@@ -393,3 +424,23 @@ def unblock_user(request, user_id):
     BlockedUser.objects.filter(blocker=request.user, blocked=target_user).delete()
     return redirect('users:chat_detail', user_id=user_id)
 
+
+# ----- promokod -----
+from .models import PromoCode
+
+
+def apply_promo(request):
+    if request.method == "POST":
+        code = request.POST.get('promo_code')
+        try:
+            promo = PromoCode.objects.get(code__iexact=code, is_active=True)
+            # Сохраняем скидку в сессии
+            request.session['discount'] = promo.discount_percentage
+            request.session['promo_code'] = promo.code
+            messages.success(request, f"Промокод '{code}' применен! Скидка {promo.discount_percentage}%")
+        except PromoCode.DoesNotExist:
+            request.session['discount'] = 0
+            request.session['promo_code'] = None
+            messages.error(request, "Неверный или неактивный промокод")
+
+    return redirect('users:cart')

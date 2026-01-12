@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.models import Group
-from .models import CustomUser, Saved, Transaction
+from .models import CustomUser, Saved, Transaction, PromoCode
 from decimal import Decimal
 
 
@@ -38,3 +38,10 @@ class TransactionAdmin(admin.ModelAdmin):
                 user.save()
 
         super().save_model(request, obj, form, change)
+
+
+@admin.register(PromoCode)
+class PromoCodeAdmin(admin.ModelAdmin):
+    list_display = ('code', 'discount_percentage', 'is_active', 'valid_until')
+    list_editable = ('is_active',)
+    search_fields = ('code',)

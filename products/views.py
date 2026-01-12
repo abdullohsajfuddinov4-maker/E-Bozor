@@ -33,22 +33,31 @@ def new_product(request):
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
-    # Проверяем, авторизован ли пользователь и оставлял ли он уже комментарий
+    # Проверка на комментарий
     already_rated = False
     if request.user.is_authenticated:
         already_rated = product.comments.filter(author=request.user).exists()
 
-    # recently viewed (твой существующий код)
+    # Логика промокода для отображения цены
+    discount_percent = request.session.get('discount', 0)
+    discounted_price = product.price
+    if discount_percent > 0:
+        discount_amount = (product.price * discount_percent) / 100
+        discounted_price = product.price - discount_amount
+
+    # Recently viewed
     recently_viewed = request.session.get('recently_viewed', [])
-    if product.id not in recently_viewed:
-        recently_viewed.append(product.id)
-        request.session['recently_viewed'] = recently_viewed
+    if product.id in recently_viewed:
+        recently_viewed.remove(product.id)
+    recently_viewed.insert(0, product.id)
+    request.session['recently_viewed'] = recently_viewed[:5] # Храним только последние 5
 
     return render(request, 'product_detail.html', {
         'product': product,
-        'already_rated': already_rated  # Передаем переменную в шаблон
+        'already_rated': already_rated,
+        'discount_percent': discount_percent,
+        'discounted_price': discounted_price
     })
-
 
 
 @login_required(login_url='login')
