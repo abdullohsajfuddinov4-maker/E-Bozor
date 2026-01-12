@@ -61,6 +61,7 @@ def add_product_image(request, product_id):
         messages.success(request, 'Фото добавлено!')
     return redirect('products:detail', product_id=product.id)
 
+
 @login_required(login_url='login')
 def product_update(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -69,62 +70,38 @@ def product_update(request, product_id):
         messages.error(request, 'Access denied!')
         return redirect('main:index')
 
-    if request.method == 'GET':
-        form = ProductForm(instance=product)
-        return render(
-            request,
-            'product_update.html',
-            {'form': form, 'product': product}
-        )
-
     if request.method == 'POST':
-        form = ProductForm(
-            instance=product,
-            data=request.POST
-        )
+        form = ProductForm(data=request.POST, instance=product)
+
+        # Получаем новые файлы из трех полей
+        img1 = request.FILES.get('image1')
+        img2 = request.FILES.get('image2')
+        img3 = request.FILES.get('image3')
 
         if form.is_valid():
             form.save()
 
-            # если загрузили новые изображения — заменяем старые
-            images = request.FILES.getlist('images')
-            if images:
-                ProductImage.objects.filter(product=product).delete()
-                for image in images:
-                    ProductImage.objects.create(
-                        product=product,
-                        image=image
-                    )
+            # Если пользователь загрузил все 3 новых изображения
+            if img1 and img2 and img3:
+                # Удаляем старые фото из базы
+                product.images.all().delete()
 
-            messages.success(request, 'Product successfully updated!')
+                # Создаем новые записи
+                for img in [img1, img2, img3]:
+                    ProductImage.objects.create(product=product, image=img)
+                messages.success(request, 'Product and all images updated!')
+            else:
+                messages.success(request, 'Product details updated (images remained the same).')
+
             return redirect('products:detail', product.id)
+    else:
+        form = ProductForm(instance=product)
 
-        return render(
-            request,
-            'product_update.html',
-            {'form': form, 'product': product}
-        )
+    return render(request, 'product_update.html', {
+        'form': form,
+        'product': product
+    })
 
-
-# @login_required(login_url='login')
-# def add_product_image(request, product_id):
-#     product = get_object_or_404(Product, id=product_id)
-#
-#     # Проверка, что именно автор добавляет фото
-#     if request.user != product.author:
-#         messages.error(request, 'Access denied!')
-#         return redirect('products:detail', product_id=product.id)
-#
-#     if request.method == 'POST':
-#         images = request.FILES.getlist('images')
-#         if images:
-#             for img in images:
-#                 ProductImage.objects.create(product=product, image=img)
-#             messages.success(request, f'Successfully added {len(images)} images.')
-#         else:
-#             messages.error(request, 'No images selected.')
-#
-#     return redirect('products:detail', product_id=product.id)
 
 
 @login_required(login_url='login')
