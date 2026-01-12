@@ -95,7 +95,7 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата отправки")
 
     class Meta:
-        ordering = ['created_at'] # Сообщения будут идти по порядку
+        ordering = ['created_at']
         verbose_name = "Сообщение"
         verbose_name_plural = "Сообщения"
 
@@ -110,4 +110,8 @@ class BlockedUser(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('blocker', 'blocked') # Нельзя заблокировать дважды
+        unique_together = ('blocker', 'blocked')
+
+
+
+# ------ promokod
