@@ -10,9 +10,6 @@ class Category(models.Model):
         return self.name
 
 
-from django.db import models
-from django.db.models import Avg
-
 class Product(models.Model):
     author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
@@ -26,7 +23,8 @@ class Product(models.Model):
 
     @property
     def average_rating(self):
-        return self.comments.aggregate(avg=Avg('rating'))['avg'] or 0
+        avg = self.comments.filter(rating__gt=0).aggregate(avg=Avg('rating'))['avg']
+        return avg or 0
 
     def __str__(self):
         return self.title
@@ -35,13 +33,9 @@ class Product(models.Model):
         ordering = ('-id',)
 
 
-
 class ProductImage(models.Model):
     product  = models.ForeignKey(Product, on_delete=models.CASCADE,related_name='images')
     image = models.ImageField(upload_to='product_images')
-
-
-
 
 
 class Comment(models.Model):
@@ -52,7 +46,7 @@ class Comment(models.Model):
     )
     author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     body = models.CharField(max_length=150)
-    rating = models.IntegerField()
+    rating = models.IntegerField(default=0)
     date = models.DateField(auto_now_add=True)
 
     def __str__(self):

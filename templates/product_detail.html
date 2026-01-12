@@ -7,135 +7,190 @@ E-Bazar - {{ product.title }}
 {% block content %}
 <div class="container mt-5">
 
-    <!-- PRODUCT -->
-    <div class="row shadow-sm">
-        <div class="col-4 p-3">
-            <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
-                <div class="carousel-inner">
-                    {% for picture in product.productimage_set.all %}
+    <div class="row shadow-sm bg-white rounded p-3">
+        <div class="col-md-5 p-3">
+            <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner border rounded">
+                    {% for picture in product.images.all %}
                         <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                            <img class="d-block w-100" height="270" src="{{ picture.image.url }}">
+                            <img class="d-block w-100" height="400" src="{{ picture.image.url }}" style="object-fit: contain; background-color: #f8f9fa;">
+                        </div>
+                    {% empty %}
+                        <div class="carousel-item active">
+                            {% load static %}
+                            <img class="d-block w-100" height="400" src="{% static 'images/14pro2.jfif' %}" style="object-fit: contain;">
                         </div>
                     {% endfor %}
                 </div>
 
-                <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon"></span>
+                {% if product.images.count > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true" style="filter: invert(1);"></span>
                 </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
-                    <span class="carousel-control-next-icon"></span>
+                <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true" style="filter: invert(1);"></span>
                 </button>
+                {% endif %}
             </div>
         </div>
 
-        <div class="col-7 p-5">
-            <h4>{{ product.title }}</h4>
+        <div class="col-md-7 p-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'main:index' %}">Home</a></li>
+                    <li class="breadcrumb-item active">{{ product.category.name }}</li>
+                </ol>
+            </nav>
+
+            <h2 class="fw-bold">{{ product.title }}</h2>
 
             <p class="text-muted">
-                <a href="{% url 'users:profile' product.author.username %}">
+                Author: <a href="{% url 'users:profile' product.author.username %}" class="text-decoration-none">
                     @{{ product.author.username }}
                 </a>
-                | {{ product.date|date:"d.m.Y" }}
+                | Published: {{ product.date|date:"d.m.Y" }}
             </p>
 
-            <p>{{ product.description|safe }}</p>
+            <h3 class="text-success fw-bold">${{ product.price }}</h3>
 
-            <!-- RATING -->
-            <p>
-                ⭐ Средний рейтинг:
+            <div class="my-4">
+                <h5>Description</h5>
+                <p class="text-secondary">{{ product.description|safe }}</p>
+            </div>
+
+            <p class="mb-4">
+                ⭐ Average Rating:
                 <strong>{{ product.average_rating|floatformat:1 }}</strong> / 5
             </p>
 
-            <div class="mt-4">
-                {% if request.user == product.author %}
-                    <a class="btn btn-warning" href="{% url 'products:update' product.id %}">
-                        Edit
-                    </a>
+            <hr>
 
-                    <form action="{% url 'products:delete' product.id %}"
-                          method="post"
-                          class="d-inline"
-                          onsubmit="return confirm('Вы действительно хотите удалить этот продукт?');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
-                            Delete
-                        </button>
-                    </form>
-                {% endif %}
-
-
-                <a class="btn btn-primary" href="mailto:{{ product.author.email }}">Email</a>
-                <a class="btn btn-primary" href="tel:{{ product.phone_number }}">Call</a>
-                <a class="btn btn-primary" href="https://t.me/{{ product.tg_username }}">Telegram</a>
+            <div class="mt-3">
+                <p><strong>Email:</strong> {{ product.author.email }}</p>
+                <p><strong>Call:</strong> {{ product.phone_number }}</p>
+                <p><strong>Telegram:</strong> @{{ product.tg_username }}</p>
             </div>
+
+            {% if request.user == product.author %}
+                <div class="mt-4 pt-3 border-top">
+                    <div class="d-flex gap-2 mb-3">
+                        <a class="btn btn-warning px-4" href="{% url 'products:update' product.id %}">
+                            Edit Product
+                        </a>
+
+                        <form action="{% url 'products:delete' product.id %}"
+                              method="post"
+                              onsubmit="return confirm('Are you sure you want to delete this product?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger px-4">Delete</button>
+                        </form>
+                    </div>
+
+                    <div class="card card-body bg-light border-0">
+                        <h6 class="card-title">Add more images</h6>
+                        <form action="{% url 'products:add_image' product.id %}" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="input-group">
+                                <input type="file" name="images" class="form-control" multiple accept="image/*" required>
+                                <button type="submit" class="btn btn-success">Upload</button>
+                            </div>
+                            <small class="text-muted mt-1 d-block">You can select multiple files at once.</small>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 
-    <!-- COMMENTS -->
-   <div class="row mt-5">
-    <div class="col-8">
-        <h5>Add comment</h5>
+    <div class="row mt-5">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm p-4">
+            <h5 class="mb-4">Leave a Comment</h5>
 
-        <form action="{% url 'products:comment_new' product.id %}" method="post">
-            {% csrf_token %}
+            {% if request.user.is_authenticated %}
+                <form action="{% url 'products:comment_new' product.id %}" method="post">
+                    {% csrf_token %}
+                    <div class="row g-2">
+                        {% if not already_rated %}
+                            <div class="col-md-3">
+                                <select name="rating" class="form-select" required>
+                                    <option value="" selected disabled>Rating</option>
+                                    <option value="5">5 ⭐</option>
+                                    <option value="4">4 ⭐</option>
+                                    <option value="3">3 ⭐</option>
+                                    <option value="2">2 ⭐</option>
+                                    <option value="1">1 ⭐</option>
+                                </select>
+                            </div>
+                            <div class="col-md-7">
+                                <input class="form-control" name="body" required placeholder="Write your first review...">
+                            </div>
+                        {% else %}
+                            <div class="col-md-10">
+                                <input class="form-control" name="body" required placeholder="Add a follow-up comment...">
+                                <small class="text-muted">Вы уже поставили оценку этому товару.</small>
+                            </div>
+                        {% endif %}
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100">Post</button>
+                        </div>
+                    </div>
+                </form>
+            {% else %}
+                <p class="text-muted text-center py-2">
+                    Please <a href="{% url 'login' %}">login</a> to leave a comment.
+                </p>
+            {% endif %}
 
-            <div class="mb-2">
-                <select name="rating" class="form-select" required>
-                    <option value="">Rating</option>
-                    {% for i in "12345" %}
-                        <option value="{{ i }}">{{ i }} ⭐</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <hr class="my-4">
 
-            <div class="input-group">
-                <input class="form-control" name="body" required placeholder="Your comment">
-                <button class="btn btn-success">Send</button>
-            </div>
-        </form>
+            <h6 class="mb-4 text-uppercase fw-bold text-muted">Comments ({{ product.comments.count }})</h6>
 
-        <hr>
+            {% for comment in product.comments.all %}
+                <div class="mb-4 d-flex align-items-start pb-3 border-bottom">
+                    <a href="{% url 'users:profile' comment.author.username %}" class="me-3">
+                        <img src="{{ comment.author.avatar.url|default:'/static/images/default-avatar.png' }}"
+                             class="rounded-circle shadow-sm"
+                             width="45"
+                             height="45"
+                             style="object-fit: cover;"
+                             alt="{{ comment.author.username }}">
+                    </a>
 
-        <h6>Comments</h6>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <a href="{% url 'users:profile' comment.author.username %}" class="fw-bold text-decoration-none text-dark">
+                                @{{ comment.author.username }}
+                            </a>
+                            <small class="text-muted">{{ comment.date|date:"d M Y" }}</small>
+                        </div>
 
-        {% for comment in product.comments.all %}
-            <div class="mb-3 d-flex align-items-start">
-                <!-- Фото профиля автора -->
-                <div class="me-3">
-                    <img src="{{ comment.author.avatar.url|default:'/static/images/default-avatar.png' }}"
-                         class="rounded-circle"
-                         width="40"
-                         height="40"
-                         alt="{{ comment.author.get_full_name }} avatar">
-                </div>
+                        {% if comment.rating > 0 %}
+                            <div class="mb-2 text-warning small">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= comment.rating %}★{% else %}<span class="text-muted">★</span>{% endif %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
 
-                <!-- Текст комментария и метаданные -->
-                <div class="flex-grow-1">
-                    <small class="text-muted d-block mb-1">
-                        @{{ comment.author.username }}
-                        | {{ comment.date }}
-                        | ⭐ {{ comment.rating }}/5
-                    </small>
-
-                    <p class="mb-0">
-                        {{ comment.body }}
+                        <p class="mb-0 text-dark" style="font-size: 0.95rem;">{{ comment.body }}</p>
 
                         {% if request.user == comment.author %}
-                            <a class="text-danger ms-2"
+                            <a class="text-danger text-decoration-none d-inline-block mt-2 small"
                                href="{% url 'products:comment_delete' product.id comment.id %}"
-                               onclick="return confirm('Вы действительно хотите удалить этот комментарий?');">
-                                delete
+                               onclick="return confirm('Delete this comment?');">
+                                <i class="bi bi-trash"></i> delete
                             </a>
                         {% endif %}
-                    </p>
+                    </div>
                 </div>
-            </div>
-        {% empty %}
-            <p class="text-muted">No comments yet</p>
-        {% endfor %}
+            {% empty %}
+                <div class="text-center py-4">
+                    <p class="text-muted">No comments yet. Be the first to review!</p>
+                </div>
+            {% endfor %}
+        </div>
     </div>
 </div>
-
-
 </div>
 {% endblock content %}

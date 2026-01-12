@@ -37,16 +37,28 @@ def logout_view(request):
     logout(request)
     return redirect('/')
 
-class ProfileView(View):
-    login_url = 'login'
 
-    def get(self, request, username):
-        user = get_object_or_404(CustomUser, username=username)
-        return render(
-            request,
-            'profile.html',
-            {'customuser': user}
-        )
+@login_required
+def profile_view(request, username):
+    # Получаем пользователя, чей профиль открыт
+    owner = get_object_or_404(CustomUser, username=username)
+
+    reminders = []
+    # Загружаем напоминания только если это личный профиль
+    if request.user == owner:
+        reminders = Reminder.objects.filter(user=owner)
+
+        # Логика сохранения напоминания через POST
+        if request.method == 'POST':
+            title = request.POST.get('title')
+            date = request.POST.get('date')
+            if title and date:
+                Reminder.objects.create(user=owner, title=title, date=date)
+
+    return render(request, 'profile.html', {
+        'customuser': owner,
+        'reminders': reminders
+    })
 
 
 class UpdateProfileView(LoginRequiredMixin, View):

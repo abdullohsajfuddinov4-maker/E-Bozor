@@ -4,31 +4,45 @@
 {% block content %}
 <div class="container mt-5">
   <div class="row justify-content-center">
-    <div class="col-6">
+    <div class="col-md-8 col-lg-6">
 
-      <h2>New Product</h2>
+      <div class="card shadow-sm p-4">
+        <h2 class="mb-4 text-center">New Product</h2>
 
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
 
-        {{ form|crispy }}
+          {{ form|crispy }}
 
-        <div class="mb-3">
-          <label class="form-label">Product images</label>
-          <input
-            type="file"
-            name="images"
-            class="form-control"
-            multiple
-            accept="image/*"
-          >
-        </div>
+          <hr class="my-4">
 
-        <button type="submit" class="btn btn-primary">Submit</button>
-        <a href="{% url 'main:index' %}" class="btn btn-secondary">Back</a>
-      </form>
+          <div class="mb-3">
+            <label class="form-label fw-bold text-primary">Upload 3 Required Images</label>
+
+            <div class="mb-3 p-2 border rounded bg-light">
+              <label class="small fw-bold">1. Main Image *</label>
+              <input type="file" name="image1" class="form-control" accept="image/*" required>
+            </div>
+
+            <div class="mb-3 p-2 border rounded bg-light">
+              <label class="small fw-bold">2. Second Image *</label>
+              <input type="file" name="image2" class="form-control" accept="image/*" required>
+            </div>
+
+            <div class="mb-3 p-2 border rounded bg-light">
+              <label class="small fw-bold">3. Third Image *</label>
+              <input type="file" name="image3" class="form-control" accept="image/*" required>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-success btn-lg">Create Listing</button>
+            <a href="{% url 'main:index' %}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
 
     </div>
   </div>
 </div>
-{% endblock %}
+{% endblock content %}
