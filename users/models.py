@@ -73,3 +73,41 @@ class Order(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.product.title}"
+
+
+# ----------message-------------
+
+class Message(models.Model):
+    sender = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='sent_messages',
+        verbose_name="Отправитель"
+    )
+    recipient = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='received_messages',
+        verbose_name="Получатель"
+    )
+    text = models.TextField(verbose_name="Текст сообщения")
+    is_read = models.BooleanField(default=False, verbose_name="Прочитано")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата отправки")
+
+    class Meta:
+        ordering = ['created_at'] # Сообщения будут идти по порядку
+        verbose_name = "Сообщение"
+        verbose_name_plural = "Сообщения"
+
+    def __str__(self):
+        return f"От {self.sender} к {self.recipient} ({self.created_at.strftime('%d.%m %H:%M')})"
+
+
+
+class BlockedUser(models.Model):
+    blocker = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='blocking')
+    blocked = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='blocked_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('blocker', 'blocked') # Нельзя заблокировать дважды

@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-2">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0" style="height: 85vh; display: flex; flex-direction: column;">
+
+                <div class="card-header bg-white d-flex align-items-center p-3 border-bottom shadow-sm">
+                    <a href="{% url 'users:chat_list' %}" class="text-dark me-3 text-decoration-none">
+                        <i class="bi bi-arrow-left fs-4"></i>
+                    </a>
+                    <a href="{% url 'users:profile' other_user.username %}" class="d-flex align-items-center text-decoration-none text-dark">
+                        {% if other_user.avatar %}
+                            <img src="{{ other_user.avatar.url }}" class="rounded-circle me-2 border" width="40" height="40" style="object-fit: cover;">
+                        {% else %}
+                            <i class="bi bi-person-circle fs-2 me-2 text-secondary"></i>
+                        {% endif %}
+                        <h6 class="mb-0 fw-bold">{{ other_user.username }}</h6>
+                    </a>
+                </div>
+
+                <div class="card-body overflow-auto p-4" id="chat-window" style="background-color: #f0f2f5; flex-grow: 1;">
+                    {% for msg in chat_messages %}
+                        <div class="d-flex mb-3 {% if msg.sender == request.user %}justify-content-end{% endif %}">
+                            <div class="p-3 shadow-sm"
+                                 style="max-width: 80%; border-radius: 15px;
+                                 {% if msg.sender == request.user %}
+                                    background-color: #198754; color: white; border-bottom-right-radius: 2px;
+                                 {% else %}
+                                    background-color: white; color: black; border-bottom-left-radius: 2px;
+                                 {% endif %}">
+                                <div style="word-wrap: break-word;">{{ msg.text }}</div>
+                                <div class="text-end" style="font-size: 0.65rem; opacity: 0.7; margin-top: 4px;">
+                                    {{ msg.created_at|date:"H:i" }}
+                                    {% if msg.sender == request.user %}
+                                        <i class="bi {% if msg.is_read %}bi-check2-all{% else %}bi-check2{% endif %}"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center mt-5 text-muted">
+                            <i class="bi bi-chat-dots fs-1 d-block mb-2"></i>
+                            <p>No messages yet. Say hello!</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="card-footer bg-white border-top p-3">
+                    <form method="POST" class="d-flex align-items-center" id="chat-form">
+                        {% csrf_token %}
+                        <input type="text" name="text" id="chat-input"
+                               class="form-control rounded-pill border-0 bg-light px-4 me-2"
+                               placeholder="Write a message..."
+                               required autocomplete="off">
+                        <button type="submit" class="btn btn-success rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 45px; height: 45px; flex-shrink: 0;">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const chatWindow = document.getElementById('chat-window');
+        const chatInput = document.getElementById('chat-input');
+
+        // 1. Прокрутка вниз при загрузке
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        // 2. Фокус на поле ввода сразу
+        chatInput.focus();
+
+        // 3. Плавная прокрутка при отправке (опционально)
+        document.getElementById('chat-form').onsubmit = function() {
+            chatWindow.style.scrollBehavior = 'smooth';
+        };
+    });
+</script>
+{% endblock %}

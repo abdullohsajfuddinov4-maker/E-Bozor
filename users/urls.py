@@ -10,8 +10,10 @@ from .views import (SignupView,
                     deposit_money,
                     buy_now,
                     add_to_cart, orders_history, cart_view, checkout_all, cart_clear, delete_order, clear_orders,
+
                     )
 from django.urls import path
+from . import views
 
 app_name='users'
 urlpatterns = [
@@ -32,7 +34,9 @@ urlpatterns = [
     path('cart/clear/',cart_clear, name='cart_clear'),
     path('orders/delete/<int:order_id>/', delete_order, name='delete_order'),
     path('orders/clear/', clear_orders, name='clear_orders'),
-
-
+    path('chats/', views.chat_list, name='chat_list'),
+    path('chats/<int:user_id>/', views.chat_detail, name='chat_detail'),
+    path('chats/<int:user_id>/block/', views.block_user, name='block_user'),
+    path('chats/<int:user_id>/unblock/', views.unblock_user, name='unblock_user'),
 
 ]

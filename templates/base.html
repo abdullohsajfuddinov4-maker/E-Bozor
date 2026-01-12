@@ -35,23 +35,49 @@
 
           <div class="collapse navbar-collapse" id="navbarContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Categories
-                </a>
-                <ul class="dropdown-menu shadow-sm">
-                    {% if categories %}
-                        {% for i in categories %}
-                        <li><a class="dropdown-item" href="{% url 'main:category' i.name %}">{{ i.name }}</a></li>
-                        {% endfor %}
-                    {% else %}
-                        <li><a class="dropdown-item disabled" href="#">No categories</a></li>
-                    {% endif %}
-                </ul>
-              </li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'products:new' %}">Add Product</a></li>
-              <li class="nav-item"><a class="nav-link" href="{% url 'users:saveds' %}">Saveds</a></li>
-            </ul>
+
+  <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button"
+       data-bs-toggle="dropdown" aria-expanded="false">
+      Categories
+    </a>
+    <ul class="dropdown-menu shadow-sm">
+      {% if categories %}
+        {% for i in categories %}
+          <li>
+            <a class="dropdown-item" href="{% url 'main:category' i.name %}">
+              {{ i.name }}
+            </a>
+          </li>
+        {% endfor %}
+      {% else %}
+        <li><a class="dropdown-item disabled">No categories</a></li>
+      {% endif %}
+    </ul>
+  </li>
+
+  <li class="nav-item">
+    <a class="nav-link" href="{% url 'products:new' %}">Add Product</a>
+  </li>
+
+  <li class="nav-item">
+    <a class="nav-link" href="{% url 'users:saveds' %}">Saveds</a>
+  </li>
+
+  <li class="nav-item">
+    <a class="nav-link position-relative" href="{% url 'users:chat_list' %}">
+      Chats
+      {% if unread_messages_count %}
+        <span class="badge rounded-pill bg-danger"
+              style="font-size: 0.6rem; top: 0; right: -6px;">
+          {{ unread_messages_count }}
+        </span>
+      {% endif %}
+    </a>
+  </li>
+
+</ul>
+
 
             <div class="d-flex align-items-center">
                 <form class="d-flex me-3" action="/" method="GET">

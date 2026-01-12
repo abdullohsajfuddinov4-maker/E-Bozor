@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from .forms import SignupForm, UpdateProfileForm
-from .models import CustomUser, Saved, Reminder, Transaction, Order
+from .models import CustomUser, Saved, Reminder, Transaction, Order, BlockedUser
 from products.models import Product
 from decimal import Decimal
 
@@ -321,3 +321,75 @@ def clear_orders(request):
         Order.objects.filter(user=request.user).delete()
         messages.success(request, "Вся история заказов очищена.")
     return redirect('users:orders')
+
+
+
+
+# -----------message------------
+
+from django.db.models import Q
+from .models import CustomUser, Message
+
+
+@login_required
+def chat_detail(request, user_id):
+    other_user = get_object_or_404(CustomUser, id=user_id)
+
+    # 1. Проверка блокировки
+    i_blocked_him = BlockedUser.objects.filter(blocker=request.user, blocked=other_user).exists()
+    he_blocked_me = BlockedUser.objects.filter(blocker=other_user, blocked=request.user).exists()
+
+    if request.method == "POST":
+        if not i_blocked_him and not he_blocked_me:
+            text = request.POST.get('text', '').strip()
+            if text:
+                Message.objects.create(sender=request.user, recipient=other_user, text=text)
+                return redirect('users:chat_detail', user_id=user_id)
+
+    # 2. ПОЛУЧЕНИЕ СООБЩЕНИЙ (Здесь важно имя переменной)
+    chat_data = Message.objects.filter(
+        (Q(sender=request.user) & Q(recipient=other_user)) |
+        (Q(sender=other_user) & Q(recipient=request.user))
+    ).order_by('created_at')
+
+    # 3. ПОМЕЧАЕМ ПРОЧИТАННЫМИ (Используем то же имя chat_data)
+    chat_data.filter(recipient=request.user, is_read=False).update(is_read=True)
+
+    return render(request, 'chat.html', {
+        'other_user': other_user,
+        'chat_messages': chat_data,  # Передаем в шаблон
+        'i_blocked_him': i_blocked_him,
+        'he_blocked_me': he_blocked_me
+    })
+from django.db.models import Max
+
+@login_required
+def chat_list(request):
+
+    chat_users = CustomUser.objects.filter(
+        Q(sent_messages__recipient=request.user) |
+        Q(received_messages__sender=request.user)
+    ).annotate(
+        last_msg_date=Max('sent_messages__created_at')
+    ).exclude(id=request.user.id).distinct().order_by('-last_msg_date')
+
+    blocked_ids = request.user.blocking.values_list('blocked_id', flat=True)
+
+    return render(request, 'chat_list.html', {
+        'users': chat_users,
+        'blocked_ids': blocked_ids
+    })
+
+
+@login_required
+def block_user(request, user_id):
+    target_user = get_object_or_404(CustomUser, id=user_id)
+    BlockedUser.objects.get_or_create(blocker=request.user, blocked=target_user)
+    return redirect('users:chat_detail', user_id=user_id)
+
+@login_required
+def unblock_user(request, user_id):
+    target_user = get_object_or_404(CustomUser, id=user_id)
+    BlockedUser.objects.filter(blocker=request.user, blocked=target_user).delete()
+    return redirect('users:chat_detail', user_id=user_id)
+
