@@ -6,7 +6,10 @@ from .views import (SignupView,
                     SavedView,
                     RecentlyViewedView,
                     profile_calendar,
-                    logout_view, deposit_money,
+                    logout_view,
+                    deposit_money,
+                    buy_now,
+                    add_to_cart, orders_history, cart_view, checkout_all, cart_clear,
                     )
 from django.urls import path
 
@@ -21,6 +24,12 @@ urlpatterns = [
     path('calendar/', profile_calendar, name='calendar'),
     path('logout/', logout_view, name='logout'),
     path('deposit/', deposit_money, name='deposit'),
+    path('buy-now/<int:product_id>/', buy_now, name='buy_now'),
+    path('add-to-cart/<int:product_id>/', add_to_cart, name='add_to_cart'),
+    path('orders/', orders_history, name='orders'),
+    path('cart/', cart_view, name='cart'),
+    path('cart/checkout/', checkout_all, name='checkout_all'),
+    path('cart/clear/',cart_clear, name='cart_clear'),
 
 
 

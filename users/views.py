@@ -6,7 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from .forms import SignupForm, UpdateProfileForm
-from .models import CustomUser, Saved, Reminder, Transaction
+from .models import CustomUser, Saved, Reminder, Transaction, Order
 from products.models import Product
 
 
@@ -180,29 +180,129 @@ def deposit_money(request):
 
 
 
-    pass
+@login_required
+def checkout_all(request):
+    cart = request.session.get('cart', {})
+    if not cart:
+        messages.error(request, "Your cart is empty.")
+        return redirect('users:cart')
 
+    total_price = 0
+    items_to_buy = []
 
+    # Сначала проверяем наличие товаров и считаем общую сумму
+    for p_id, quantity in cart.items():
+        product = get_object_or_404(Product, id=p_id)
+        if product.count < quantity:
+            messages.error(request, f"Not enough stock for {product.title}")
+            return redirect('users:cart')
+        total_price += product.price * quantity
+        items_to_buy.append({'product': product, 'quantity': quantity})
 
+    # Проверяем баланс
+    if request.user.balance < total_price:
+        messages.error(request, "Insufficient funds on your balance.")
+        return redirect('users:cart')
+
+    # Если всё ок — списываем деньги и создаем заказы
+    request.user.balance -= total_price
+    request.user.save()
+
+    for item in items_to_buy:
+        product = item['product']
+        # Уменьшаем остаток
+        product.count -= item['quantity']
+        product.save()
+        # Создаем запись в истории для каждой единицы или товара
+        Order.objects.create(
+            user=request.user,
+            product=product,
+            price=product.price * item['quantity'],
+            quantity=item['quantity']
+        )
+
+    # Очищаем корзину
+    request.session['cart'] = {}
+    messages.success(request, "Success! Your order has been placed.")
+    return redirect('users:orders')
+
+@login_required
+def cart_clear(request):
+    request.session['cart'] = {}
+    return redirect('users:cart')
+
+# -------- by----
+from products.models import Product
+
+@login_required
+def buy_now(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    # Защита: продавец не может купить свой товар
+    if request.user == product.author:
+        messages.error(request, "You cannot buy your own product.")
+        return redirect('products:detail', product_id=product.id)
+
+    # Проверка количества и баланса
+    if product.count > 0:
+        if request.user.balance >= product.price:
+            # 1. Снимаем деньги
+            request.user.balance -= product.price
+            request.user.save()
+
+            # 2. Уменьшаем количество товара
+            product.count -= 1
+            product.save()
+
+            # 3. Здесь можно создать Order (Заказ)
+            # Order.objects.create(user=request.user, product=product, ...)
+
+            messages.success(request, f"Successfully purchased {product.title}!")
+        else:
+            messages.error(request, "Insufficient balance.")
+    else:
+        messages.error(request, "Product is out of stock.")
+
+    return redirect('products:detail', product_id=product.id)
+
+@login_required
+def add_to_cart(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    if request.user == product.author:
+        messages.error(request, "You cannot add your own product to cart.")
+    else:
+        cart = request.session.get('cart', {})
+        p_id = str(product.id)
+
+        if p_id in cart:
+            cart[p_id] += 1
+        else:
+            cart[p_id] = 1
+
+        request.session['cart'] = cart
+        messages.success(request, "Added to cart!")
+
+    return redirect(request.META.get('HTTP_REFERER', '/'))
 
 
 @login_required
-def checkout(request):
-    # Допустим, считаем общую сумму корзины
-    total_price = calculate_total(request.session['cart'])
+def orders_history(request):
+    orders = Order.objects.filter(user=request.user).order_by('-date')
+    return render(request, 'orders.html', {'orders': orders})
 
-    if request.user.balance >= total_price:
-        # 1. Вычитаем деньги
-        request.user.balance -= total_price
-        request.user.save()
 
-        # 2. Создаем заказ
-        Order.objects.create(user=request.user, total=total_price, items=...)
+@login_required
+def cart_view(request):
+    cart = request.session.get('cart', {})
+    products = []
+    total_price = 0
 
-        # 3. Очищаем корзину
-        request.session['cart'] = {}
-        messages.success(request, "Покупка успешно совершена!")
-    else:
-        messages.error(request, "Недостаточно средств на балансе.")
+    # Получаем товары из БД по ID из сессии
+    for p_id, quantity in cart.items():
+        product = get_object_or_404(Product, id=p_id)
+        total_price += product.price * quantity
+        products.append({'product': product, 'quantity': quantity})
 
-    return redirect('main:cart')
+    return render(request, 'carts.html', {'products': products, 'total_price': total_price})
+

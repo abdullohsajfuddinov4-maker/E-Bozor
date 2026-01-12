@@ -20,6 +20,7 @@ class Product(models.Model):
     phone_number = models.CharField(max_length=17)
     tg_username = models.CharField(max_length=100)
     date = models.DateTimeField(auto_now_add=True)
+    count = models.PositiveIntegerField(default=1) # new
 
     @property
     def average_rating(self):

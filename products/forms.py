@@ -13,6 +13,7 @@ class NewProductForm(forms.ModelForm):
             'category',
             'phone_number',
             'tg_username',
+            'count'
         )
 
     def __init__(self, *args, **kwargs):
@@ -39,4 +40,5 @@ class ProductForm(forms.ModelForm):
             'category',
             'phone_number',
             'tg_username',
+            'count'
         )
